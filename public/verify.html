@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Verifikasi Dokumen - BPM ITG E-SIGN 2026</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            navy: { 800: '#132B50', 900: '#0B1D3A' },
+            gold: { 400: '#D4B85C', 500: '#C9A84C' }
+          }
+        }
+      }
+    }
+  </script>
+</head>
+<body class="bg-slate-50 text-slate-900 font-sans min-h-screen">
+  
+  <header class="bg-white border-b border-slate-200 py-4 px-6">
+    <div class="max-w-2xl mx-auto flex items-center gap-3">
+      <div class="w-9 h-9 bg-navy-900 rounded-xl flex items-center justify-center text-gold-400">
+        <i data-lucide="shield" class="w-5 h-5"></i>
+      </div>
+      <div>
+        <h1 class="font-bold text-navy-900 text-sm">Halaman Verifikasi Dokumen Resmi</h1>
+        <p class="text-xs text-slate-400">BPM ITG E-SIGN 2026</p>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-2xl mx-auto p-6 space-y-6">
+    <div id="status-card" class="rounded-2xl p-8 text-center text-white bg-slate-400">
+      <div id="status-icon" class="w-16 h-16 rounded-full mx-auto mb-4 bg-white/20 flex items-center justify-center">
+        <i data-lucide="loader-2" class="w-8 h-8 animate-spin"></i>
+      </div>
+      <h2 id="status-title" class="text-2xl font-bold mb-2">Memeriksa Dokumen...</h2>
+      <p id="status-desc" class="text-white/80 text-xs max-w-md mx-auto">Mohon tunggu sebentar...</p>
+    </div>
+
+    <div id="details-card" class="hidden bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-4">
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+        <div>
+          <span class="text-slate-400">Nama Dokumen:</span>
+          <p id="detail-name" class="font-bold text-slate-800 text-sm"></p>
+        </div>
+        <div>
+          <span class="text-slate-400">Nomor Surat:</span>
+          <p id="detail-number" class="font-bold text-slate-800 text-sm"></p>
+        </div>
+        <div>
+          <span class="text-slate-400">Tanggal Surat:</span>
+          <p id="detail-date" class="font-bold text-slate-800"></p>
+        </div>
+        <div>
+          <span class="text-slate-400">Tanggal Ditandatangani:</span>
+          <p id="detail-signed" class="font-bold text-slate-800"></p>
+        </div>
+        <div>
+          <span class="text-slate-400">Penandatangan:</span>
+          <p id="detail-signer" class="font-bold text-navy-900"></p>
+        </div>
+        <div>
+          <span class="text-slate-400">Jabatan:</span>
+          <p id="detail-title" class="font-bold text-slate-800"></p>
+        </div>
+      </div>
+
+      <div class="p-4 bg-navy-50 rounded-xl space-y-1">
+        <span class="text-[10px] text-slate-400">ID Dokumen:</span>
+        <p id="detail-code" class="font-mono text-sm font-bold text-navy-900"></p>
+      </div>
+
+      <div class="p-4 bg-slate-50 rounded-xl space-y-1">
+        <span class="text-[10px] text-slate-400">SHA-256 Document Checksum Hash:</span>
+        <p id="detail-hash" class="font-mono text-[10px] text-slate-600 break-all"></p>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+      lucide.createIcons();
+      const code = window.location.pathname.split('/').pop();
+
+      try {
+        const res = await fetch(`/api/verify/${code}`);
+        const data = await res.json();
+
+        const card = document.getElementById('status-card');
+        const title = document.getElementById('status-title');
+        const desc = document.getElementById('status-desc');
+        const icon = document.getElementById('status-icon');
+
+        if (data.valid) {
+          card.className = 'rounded-2xl p-8 text-center text-white bg-gradient-to-br from-emerald-500 to-emerald-600 shadow-md';
+          icon.innerHTML = '<i data-lucide="check-circle-2" className="w-10 h-10"></i>';
+          title.innerText = '✓ DOKUMEN TERVERIFIKASI';
+          desc.innerText = 'Dokumen valid, sah, dan terdaftar dalam sistem resmi BPM ITG 2026.';
+
+          document.getElementById('detail-name').innerText = data.document.documentName;
+          document.getElementById('detail-number').innerText = data.document.documentNumber;
+          document.getElementById('detail-date').innerText = data.document.documentDate || '-';
+          document.getElementById('detail-signed').innerText = data.document.signedAt ? new Date(data.document.signedAt).toLocaleString('id-ID') : '-';
+          document.getElementById('detail-signer').innerText = data.document.signerName;
+          document.getElementById('detail-title').innerText = data.document.signerTitle;
+          document.getElementById('detail-code').innerText = data.document.documentCode;
+          document.getElementById('detail-hash').innerText = data.document.signedHash;
+
+          document.getElementById('details-card').classList.remove('hidden');
+        } else {
+          card.className = 'rounded-2xl p-8 text-center text-white bg-gradient-to-br from-red-500 to-red-600 shadow-md';
+          icon.innerHTML = '<i data-lucide="x-circle" className="w-10 h-10"></i>';
+          title.innerText = '✕ DOKUMEN TIDAK VALID';
+          desc.innerText = data.message || 'Dokumen tidak terdaftar dalam sistem.';
+        }
+
+        lucide.createIcons();
+      } catch (err) {
+        console.error(err);
+      }
+    });
+  </script>
+</body>
+</html>

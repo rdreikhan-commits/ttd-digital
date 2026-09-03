@@ -1,0 +1,930 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BPM ITG E-SIGN 2026 - Sistem Tanda Tangan Elektronik</title>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            navy: {
+              50: '#E8EDF5', 100: '#C5D0E6', 700: '#1E3B6F', 800: '#132B50', 900: '#0B1D3A', 950: '#061325'
+            },
+            gold: {
+              400: '#D4B85C', 500: '#C9A84C', 600: '#B89434'
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Lucide Icons CDN -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <!-- PDF.js CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script>
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+  </script>
+
+  <style>
+    .signature-box {
+      cursor: move;
+      user-select: none;
+    }
+    .signature-box:hover {
+      box-shadow: 0 4px 15px rgba(11, 29, 58, 0.3);
+    }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-900 font-sans min-h-screen flex flex-col">
+
+  <!-- Header Navbar -->
+  <header class="bg-navy-900 text-white border-b border-navy-800 sticky top-0 z-30 shadow-md">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 flex items-center justify-between h-16">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 bg-gradient-to-br from-gold-400 to-gold-600 rounded-xl flex items-center justify-center shadow-md shadow-gold-500/20">
+          <i data-lucide="shield" class="w-6 h-6 text-navy-900"></i>
+        </div>
+        <div>
+          <h1 class="font-bold text-base tracking-wide text-white leading-tight">BPM ITG E-SIGN</h1>
+          <p class="text-gold-400 text-xs font-medium">Periode 2026</p>
+        </div>
+      </div>
+
+      <!-- Navigation Tabs -->
+      <nav class="flex items-center gap-2">
+        <button id="nav-sign" onclick="switchTab('sign')" class="flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold bg-gold-500 text-navy-900 transition-all">
+          <i data-lucide="file-signature" class="w-4 h-4"></i>
+          <span>Tanda Tangan Surat</span>
+        </button>
+        <button id="nav-history" onclick="switchTab('history')" class="flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-medium text-navy-200 hover:bg-navy-800 transition-all">
+          <i data-lucide="history" class="w-4 h-4"></i>
+          <span>Riwayat Surat</span>
+        </button>
+        <button id="nav-verify" onclick="switchTab('verify')" class="flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-medium text-navy-200 hover:bg-navy-800 transition-all">
+          <i data-lucide="shield-check" class="w-4 h-4"></i>
+          <span>Cek Verifikasi</span>
+        </button>
+        <button id="nav-users" onclick="switchTab('users')" class="flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-medium text-navy-200 hover:bg-navy-800 transition-all">
+          <i data-lucide="users" class="w-4 h-4"></i>
+          <span>Kelola Akun</span>
+        </button>
+      <!-- Active User Profile & Logout -->
+      <div class="flex items-center gap-3">
+        <div class="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-navy-800 rounded-xl text-xs border border-navy-700">
+          <i data-lucide="user" class="w-3.5 h-3.5 text-gold-400"></i>
+          <span id="user-display-name" class="font-semibold text-white">Guest</span>
+        </div>
+        <button type="button" onclick="handleLogout()" class="p-2 text-red-300 hover:text-red-100 hover:bg-red-500/20 rounded-xl text-xs font-semibold flex items-center gap-1 transition-colors" title="Keluar dari sistem">
+          <i data-lucide="log-out" class="w-4 h-4"></i>
+          <span class="hidden sm:inline">Logout</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="max-w-5xl w-full mx-auto p-4 sm:p-6 flex-1 space-y-6">
+
+    <!-- Banner -->
+    <div class="bg-gradient-to-r from-navy-900 via-navy-800 to-navy-950 text-white rounded-2xl p-6 sm:p-8 shadow-lg relative overflow-hidden">
+      <span class="inline-block px-3 py-1 bg-gold-500/20 text-gold-400 border border-gold-500/30 text-xs font-semibold rounded-full mb-3">
+        Sistem Tanda Tangan Elektronik BPM ITG 2026
+      </span>
+      <h2 class="text-2xl sm:text-3xl font-bold tracking-tight mb-2">Tanda Tangan Surat Resmi PDF</h2>
+      <p class="text-navy-200 text-sm max-w-2xl leading-relaxed">
+        Unggah file PDF surat resmi, atur posisi tanda tangan & QR Code verifikasi, lalu unduh dokumen resmi terverifikasi dengan SHA-256 Hash.
+      </p>
+    </div>
+
+    <!-- Alert Message -->
+    <div id="alert-box" class="hidden p-4 rounded-2xl border text-sm flex items-center justify-between">
+      <span id="alert-text"></span>
+      <button onclick="hideAlert()" class="p-1"><i data-lucide="x" class="w-4 h-4"></i></button>
+    </div>
+
+    <!-- TAB 1: E-SIGN WORKFLOW -->
+    <div id="tab-sign-content" class="space-y-6">
+      
+      <!-- Stepper Header -->
+      <div class="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm flex items-center justify-between max-w-xl mx-auto">
+        <div id="step1-indicator" class="flex items-center gap-2 text-navy-900 font-bold">
+          <div class="w-7 h-7 bg-navy-900 text-white rounded-full flex items-center justify-center text-xs">1</div>
+          <span class="text-xs sm:text-sm">Upload & Detail</span>
+        </div>
+        <div class="h-0.5 w-8 bg-slate-200"></div>
+        <div id="step2-indicator" class="flex items-center gap-2 text-slate-400">
+          <div class="w-7 h-7 bg-slate-100 text-slate-500 rounded-full flex items-center justify-center text-xs">2</div>
+          <span class="text-xs sm:text-sm">Posisi TTD</span>
+        </div>
+        <div class="h-0.5 w-8 bg-slate-200"></div>
+        <div id="step3-indicator" class="flex items-center gap-2 text-slate-400">
+          <div class="w-7 h-7 bg-slate-100 text-slate-500 rounded-full flex items-center justify-center text-xs">3</div>
+          <span class="text-xs sm:text-sm">Download PDF</span>
+        </div>
+      </div>
+
+      <!-- STEP 1: Upload & Form -->
+      <div id="step-1-card" class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+        <div class="p-6 border-b border-slate-100 bg-slate-50/50">
+          <h3 class="font-bold text-navy-900 text-base">Langkah 1: Unggah Surat PDF & Data</h3>
+        </div>
+        <div class="p-6 space-y-6">
+          
+          <!-- Drag & Drop Zone -->
+          <div id="drop-zone" onclick="document.getElementById('pdf-input').click()" class="border-2 border-dashed border-slate-300 hover:border-navy-600 rounded-2xl p-8 text-center cursor-pointer transition-all hover:bg-slate-50">
+            <div class="w-14 h-14 bg-navy-50 text-navy-700 rounded-2xl flex items-center justify-center mx-auto mb-3">
+              <i data-lucide="upload" class="w-7 h-7"></i>
+            </div>
+            <p id="file-label-title" class="font-semibold text-slate-800 text-base mb-1">Tarik file PDF ke sini</p>
+            <p class="text-slate-400 text-xs mb-3">atau klik untuk memilih file</p>
+            <span class="px-5 py-2 bg-navy-800 text-white rounded-xl text-xs font-semibold inline-block shadow-sm">Pilih File PDF</span>
+            <input type="file" id="pdf-input" accept="application/pdf" class="hidden" onchange="handleFileChange(event)">
+          </div>
+
+          <!-- Metadata Form -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1">Nomor Surat *</label>
+              <input type="text" id="doc-number" placeholder="Contoh: BPM/SK/09/2026" class="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-navy-500/20 focus:border-navy-600 bg-slate-50/30">
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1">Nama Dokumen / Surat *</label>
+              <input type="text" id="doc-name" placeholder="Contoh: Surat Undangan Rapat Panitia" class="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-navy-500/20 focus:border-navy-600 bg-slate-50/30">
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1">Tanggal Surat *</label>
+              <input type="date" id="doc-date" class="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-navy-500/20 focus:border-navy-600 bg-slate-50/30">
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1">Pengirim / Pengaju</label>
+              <input type="text" id="doc-sender" placeholder="Contoh: Sekretaris BPM ITG" class="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-navy-500/20 focus:border-navy-600 bg-slate-50/30">
+            </div>
+          </div>
+        </div>
+
+        <div class="p-4 bg-slate-50 border-t border-slate-100 flex justify-end">
+          <button onclick="submitStep1()" class="px-6 py-3 bg-gradient-to-r from-navy-800 to-navy-900 text-white rounded-xl font-semibold text-sm hover:from-navy-700 hover:to-navy-800 transition-all shadow-md flex items-center gap-2">
+            <span>Lanjut Tentukan Posisi TTD</span>
+            <i data-lucide="chevron-right" class="w-4 h-4"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- STEP 2: Interactive PDF Canvas & Drag Signature -->
+      <div id="step-2-card" class="hidden space-y-4">
+        <!-- Template & Custom Name Selection Bar -->
+        <div class="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm space-y-4">
+          <div class="flex items-center justify-between flex-wrap gap-2">
+            <div>
+              <h3 class="font-bold text-navy-900 text-sm flex items-center gap-2">
+                <i data-lucide="layout-template" class="w-4 h-4 text-gold-500"></i>
+                Bentuk Template & Data Penandatangan:
+              </h3>
+              <p class="text-slate-500 text-xs">Pilih bentuk layout TTD dan sesuaikan nama / jabatan jika diperlukan</p>
+            </div>
+            <div class="flex items-center gap-2">
+              <button onclick="goToStep(1)" class="px-4 py-2 border border-slate-200 rounded-xl text-xs font-semibold hover:bg-slate-50">Kembali</button>
+              <button onclick="submitSignPDF()" class="px-6 py-2.5 bg-gradient-to-r from-gold-500 to-gold-600 text-navy-900 font-bold rounded-xl text-xs shadow-md flex items-center gap-2">
+                <i data-lucide="pen-tool" class="w-4 h-4"></i>
+                <span>Simpan & Tanda Tangani</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Template Buttons (Bentuk Layout) -->
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 border-t border-slate-100">
+            <button id="tpl-btn-standard" onclick="selectTemplate('standard')" class="p-3 rounded-xl border-2 border-navy-800 bg-navy-50/50 text-left transition-all">
+              <div class="flex items-center gap-2 mb-1">
+                <i data-lucide="square" class="w-4 h-4 text-navy-800"></i>
+                <p class="font-bold text-navy-900 text-xs">1. Kotak TTD Umum</p>
+              </div>
+              <p class="text-[10px] text-slate-500">Kotak standar sudut kanan/kiri bawah surat</p>
+            </button>
+
+            <button id="tpl-btn-footer" onclick="selectTemplate('footer')" class="p-3 rounded-xl border border-slate-200 text-left hover:border-navy-600 transition-all">
+              <div class="flex items-center gap-2 mb-1">
+                <i data-lucide="rectangle-horizontal" class="w-4 h-4 text-slate-700"></i>
+                <p class="font-bold text-slate-800 text-xs">2. Footer Panjang Bawah</p>
+              </div>
+              <p class="text-[10px] text-slate-500">Banner melintasi bagian bawah surat</p>
+            </button>
+
+            <button id="tpl-btn-certificate" onclick="selectTemplate('certificate')" class="p-3 rounded-xl border border-slate-200 text-left hover:border-navy-600 transition-all">
+              <div class="flex items-center gap-2 mb-1">
+                <i data-lucide="award" class="w-4 h-4 text-gold-600"></i>
+                <p class="font-bold text-slate-800 text-xs">3. TTD Sertifikat / Piagam</p>
+              </div>
+              <p class="text-[10px] text-slate-500">Desain khusus Sertifikat & Piagam</p>
+            </button>
+          </div>
+
+          <!-- Custom Name & Title Fields -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-slate-100">
+            <div>
+              <label class="block text-[11px] font-semibold text-slate-700 mb-1">Nama Penandatangan</label>
+              <input type="text" id="sig-custom-name" oninput="updateCustomSignerInfo()" value="Ketua BPM ITG 2026" placeholder="Nama Penandatangan..." class="w-full px-3 py-1.5 border border-slate-200 rounded-lg text-xs bg-slate-50/50 focus:outline-none focus:border-navy-600 font-bold text-navy-900">
+            </div>
+            <div>
+              <label class="block text-[11px] font-semibold text-slate-700 mb-1">Jabatan & Instansi / Organisasi</label>
+              <input type="text" id="sig-custom-role" oninput="updateCustomSignerInfo()" value="Ketua Badan Perwakilan Mahasiswa ITG" placeholder="Jabatan & Organisasi..." class="w-full px-3 py-1.5 border border-slate-200 rounded-lg text-xs bg-slate-50/50 focus:outline-none focus:border-navy-600 font-medium text-slate-700">
+            </div>
+          </div>
+        </div>
+
+        <!-- Canvas Container -->
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+          <div class="flex items-center justify-between p-3 bg-slate-100 border-b border-slate-200 text-xs">
+            <div class="flex items-center gap-2">
+              <span>Halaman:</span>
+              <button onclick="changePage(-1)" class="p-1 hover:bg-slate-200 rounded"><i data-lucide="chevron-left" class="w-4 h-4"></i></button>
+              <span id="page-num-display" class="font-bold">1 / 1</span>
+              <button onclick="changePage(1)" class="p-1 hover:bg-slate-200 rounded"><i data-lucide="chevron-right" class="w-4 h-4"></i></button>
+            </div>
+            <div class="flex items-center gap-2 text-slate-500 italic">
+              <span>💡 Klik QR Code / Kotak untuk menguji verifikasi langsung</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <button onclick="changeZoom(-10)" class="p-1 hover:bg-slate-200 rounded"><i data-lucide="zoom-out" class="w-4 h-4"></i></button>
+              <span id="zoom-display" class="font-bold">100%</span>
+              <button onclick="changeZoom(10)" class="p-1 hover:bg-slate-200 rounded"><i data-lucide="zoom-in" class="w-4 h-4"></i></button>
+            </div>
+          </div>
+
+          <div id="canvas-wrapper" class="relative overflow-auto bg-slate-200/60 p-4 flex justify-center" style="max-height: 65vh;">
+            <div class="relative inline-block">
+              <canvas id="pdf-canvas" class="shadow-md bg-white rounded"></canvas>
+              
+              <!-- Signature Draggable Overlay Box -->
+              <div id="sig-overlay" class="signature-box absolute border-2 border-dashed border-navy-800 bg-white/95 rounded-lg shadow-lg overflow-hidden transition-all" style="width: 210px; height: 105px; left: 200px; top: 300px;">
+                <div class="bg-navy-900 text-white text-[8px] px-2 py-0.5 font-bold flex justify-between items-center">
+                  <span>DITANDATANGANI SECARA ELEKTRONIK</span>
+                  <span className="text-gold-400">✓</span>
+                </div>
+                <div id="sig-overlay-body" class="p-2 flex justify-between items-center h-[calc(100%-18px)]">
+                  <div>
+                    <p id="sig-title-name" class="text-[9px] font-bold text-navy-900">Ketua BPM ITG 2026</p>
+                    <p id="sig-title-role" class="text-[7.5px] text-slate-600 font-medium">Ketua Badan Perwakilan Mahasiswa</p>
+                    <p class="text-[7px] text-slate-400">Institut Teknologi Garut</p>
+                  </div>
+                  <!-- Clickable QR Preview Button -->
+                  <button onclick="testVerificationClick(event)" title="Klik untuk uji coba verifikasi QR secara langsung" class="w-9 h-9 bg-navy-50 hover:bg-gold-500/20 border border-navy-200 rounded flex items-center justify-center transition-all group">
+                    <i data-lucide="qr-code" class="w-6 h-6 text-navy-800 group-hover:scale-110 transition-transform"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- STEP 3: Success & Download Card -->
+      <div id="step-3-card" class="hidden max-w-xl mx-auto bg-white rounded-2xl border border-slate-200 p-8 shadow-sm text-center space-y-6">
+        <div class="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto">
+          <i data-lucide="check-circle-2" class="w-10 h-10"></i>
+        </div>
+        <div>
+          <h3 class="text-2xl font-bold text-navy-900">Dokumen Berhasil Ditandatangani!</h3>
+          <p class="text-slate-500 text-xs mt-1">File PDF telah dibubuhi TTD resmi, QR Code verifikasi, dan SHA-256 Hash.</p>
+        </div>
+
+        <!-- Interactive Clickable QR Card -->
+        <div onclick="openVerificationPage()" class="p-4 bg-navy-50 hover:bg-gold-500/10 border-2 border-dashed border-navy-300 rounded-2xl cursor-pointer transition-all flex items-center gap-4 text-left group">
+          <div class="w-12 h-12 bg-white rounded-xl border border-navy-200 flex items-center justify-center text-navy-900 shadow-sm group-hover:scale-105 transition-transform">
+            <i data-lucide="qr-code" class="w-7 h-7"></i>
+          </div>
+          <div class="flex-1">
+            <p class="font-bold text-navy-900 text-xs flex items-center gap-1">
+              <span>QR Code Terverifikasi</span>
+              <i data-lucide="external-link" class="w-3 h-3 text-gold-600"></i>
+            </p>
+            <p className="text-[11px] text-slate-500">Klik di sini untuk langsung melihat status halaman verifikasi publik</p>
+          </div>
+        </div>
+
+        <div class="bg-slate-50 rounded-2xl p-4 text-left space-y-2 border border-slate-100 text-xs font-mono">
+          <div class="flex justify-between"><span class="text-slate-500 font-sans">ID Dokumen:</span><span id="res-doc-code" class="font-bold text-navy-900"></span></div>
+          <div class="flex justify-between"><span class="text-slate-500 font-sans">SHA-256 Hash:</span><span id="res-hash" class="text-[10px] text-slate-600 max-w-[200px] truncate"></span></div>
+        </div>
+
+        <div class="flex flex-col sm:flex-row gap-3">
+          <a id="download-btn" href="#" class="flex-1 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-xs flex items-center justify-center gap-2 shadow-sm">
+            <i data-lucide="download" class="w-4 h-4"></i>
+            <span>Download PDF Terverifikasi</span>
+          </a>
+          <button onclick="copyVerifyLinkResult()" class="px-4 py-3 border border-slate-200 rounded-xl font-semibold text-xs text-slate-700 hover:bg-slate-50 flex items-center justify-center gap-2">
+            <i data-lucide="copy" class="w-4 h-4"></i>
+            <span>Copy Link Verifikasi</span>
+          </button>
+        </div>
+
+        <button onclick="resetApp()" class="text-xs font-semibold text-navy-700 hover:underline flex items-center justify-center gap-1.5 mx-auto pt-2">
+          <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>
+          <span>Tanda Tangani Surat Lain</span>
+        </button>
+      </div>
+
+    </div>
+
+    <!-- TAB 2: HISTORY CONTENT -->
+    <div id="tab-history-content" class="hidden space-y-4">
+      <div class="flex items-center justify-between">
+        <h3 class="font-bold text-navy-900 text-lg">Riwayat Dokumen Surat</h3>
+        <button onclick="loadHistory()" class="px-3 py-1.5 border rounded-xl text-xs font-semibold hover:bg-slate-100">Refresh</button>
+      </div>
+      <div id="history-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+    </div>
+
+    <!-- TAB 3: VERIFY LOOKUP CONTENT -->
+    <div id="tab-verify-content" class="hidden max-w-md mx-auto py-6 space-y-6">
+      <div class="text-center space-y-2">
+        <div class="w-14 h-14 bg-navy-50 text-navy-800 rounded-2xl flex items-center justify-center mx-auto border border-navy-100">
+          <i data-lucide="shield-check" class="w-7 h-7"></i>
+        </div>
+        <h3 class="text-xl font-bold text-navy-900">Periksa Keaslian Dokumen</h3>
+        <p class="text-slate-500 text-xs">Masukkan Kode ID Dokumen (contoh: BPM-ESIGN-2026-000001)</p>
+      </div>
+
+      <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-4">
+        <input type="text" id="verify-code-input" placeholder="BPM-ESIGN-2026-000001" class="w-full px-4 py-3 border border-slate-200 rounded-xl font-mono text-center font-bold text-sm focus:outline-none focus:ring-2 focus:ring-navy-500/20">
+        <button onclick="checkVerification()" class="w-full py-3 bg-navy-900 text-white font-bold rounded-xl text-xs hover:bg-navy-800 transition-colors shadow-md">
+          Verifikasi Dokumen
+        </button>
+      </div>
+    </div>
+
+    <!-- TAB 4: USER MANAGEMENT (ADMIN) -->
+    <div id="tab-users-content" class="hidden space-y-6">
+      <div class="flex items-center justify-between">
+        <div>
+          <h3 class="font-bold text-navy-900 text-lg">Kelola Akun Pengguna</h3>
+          <p class="text-slate-500 text-xs">Tambah & kelola akun pengaju / penandatangan dalam sistem BPM ITG E-SIGN</p>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Form Tambah Akun Baru -->
+        <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm space-y-4">
+          <h4 class="font-bold text-navy-900 text-sm flex items-center gap-2">
+            <i data-lucide="user-plus" class="w-4 h-4 text-gold-500"></i>
+            Tambah Akun Baru
+          </h4>
+          <form onsubmit="createUser(event)" class="space-y-3">
+            <div>
+              <label class="block text-[11px] font-semibold text-slate-700 mb-1">Nama Lengkap *</label>
+              <input type="text" id="new-user-name" placeholder="Contoh: Ahmad Fauzi, S.T." required class="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs focus:outline-none focus:border-navy-600">
+            </div>
+            <div>
+              <label class="block text-[11px] font-semibold text-slate-700 mb-1">Email / Username *</label>
+              <input type="email" id="new-user-email" placeholder="contoh@bpmitg.ac.id" required class="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs focus:outline-none focus:border-navy-600">
+            </div>
+            <div>
+              <label class="block text-[11px] font-semibold text-slate-700 mb-1">Password *</label>
+              <input type="password" id="new-user-pass" placeholder="Password akun..." required class="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs focus:outline-none focus:border-navy-600">
+            </div>
+            <div>
+              <label class="block text-[11px] font-semibold text-slate-700 mb-1">Nama Organisasi / Lembaga *</label>
+              <input type="text" id="new-user-org" placeholder="Contoh: Badan Eksekutif Mahasiswa (BEM ITG)" required class="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs focus:outline-none focus:border-navy-600">
+            </div>
+            <div>
+              <label class="block text-[11px] font-semibold text-slate-700 mb-1">Peran / Hak Akses *</label>
+              <select id="new-user-role" class="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs focus:outline-none focus:border-navy-600 bg-white">
+                <option value="ORGANISASI">Akun Organisasi (Penandatangan TTD)</option>
+                <option value="ADMIN">Administrator (Hanya Pengelola Akun)</option>
+              </select>
+            </div>
+            <button type="submit" class="w-full py-2.5 bg-navy-900 hover:bg-navy-800 text-white font-bold rounded-xl text-xs shadow-md transition-colors flex items-center justify-center gap-1.5 pt-2">
+              <i data-lucide="plus-circle" class="w-4 h-4"></i>
+              <span>Buat Akun Baru</span>
+            </button>
+          </form>
+        </div>
+
+        <!-- Tabel Daftar Akun Terdaftar -->
+        <div class="lg:col-span-2 bg-white rounded-2xl border border-slate-200 p-5 shadow-sm space-y-4">
+          <div class="flex justify-between items-center">
+            <h4 class="font-bold text-navy-900 text-sm">Daftar Akun Terdaftar</h4>
+            <button onclick="loadUsers()" class="px-2.5 py-1 border rounded-lg text-xs font-semibold hover:bg-slate-50">Refresh</button>
+          </div>
+
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs">
+              <thead>
+                <tr class="bg-slate-50 border-b border-slate-200 text-slate-500 font-semibold">
+                  <th class="py-2.5 px-3">Nama</th>
+                  <th class="py-2.5 px-3">Email</th>
+                  <th class="py-2.5 px-3">Peran</th>
+                  <th class="py-2.5 px-3 text-center">Aksi</th>
+                </tr>
+              </thead>
+              <tbody id="users-table-body" class="divide-y divide-slate-100"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <footer class="py-4 text-center text-xs text-slate-400 border-t border-slate-200 bg-white">
+    © 2026 Badan Perwakilan Mahasiswa Institut Teknologi Garut (BPM ITG)
+  </footer>
+
+  <!-- Vanilla JavaScript Logic -->
+  <script>
+    // State variables
+    let currentTab = 'sign';
+    let currentStep = 1;
+    let selectedFile = null;
+    let currentDocument = null;
+    let pdfDocObj = null;
+    let pdfPageNum = 1;
+    let totalPdfPages = 1;
+    let zoomLevel = 100;
+    let sigPosition = { x: 200, y: 300, width: 200, height: 100 };
+    let isDraggingSig = false;
+    let dragStart = { x: 0, y: 0 };
+
+    let activeTemplate = 'standard';
+
+    let currentUser = null;
+
+    document.addEventListener('DOMContentLoaded', () => {
+      lucide.createIcons();
+      document.getElementById('doc-date').value = new Date().toISOString().split('T')[0];
+      initDragSig();
+      checkAuthSession();
+    });
+
+    function checkAuthSession() {
+      const stored = localStorage.getItem('bpm_esign_user');
+      if (!stored) {
+        window.location.href = '/login';
+        return;
+      }
+      try {
+        currentUser = JSON.parse(stored);
+        document.getElementById('user-display-name').innerText = `${currentUser.name} (${currentUser.role})`;
+        
+        // Role permissions
+        const usersNavBtn = document.getElementById('nav-users');
+        if (currentUser.role === 'ADMIN') {
+          if (usersNavBtn) usersNavBtn.classList.remove('hidden');
+        } else {
+          if (usersNavBtn) usersNavBtn.classList.add('hidden');
+          if (currentTab === 'users') switchTab('sign');
+        }
+
+        // Auto-fill custom name & organization title
+        if (currentUser.name && document.getElementById('sig-custom-name')) {
+          document.getElementById('sig-custom-name').value = currentUser.name;
+        }
+        if (currentUser.organization && document.getElementById('sig-custom-role')) {
+          document.getElementById('sig-custom-role').value = `Ketua ${currentUser.organization}`;
+        }
+        updateCustomSignerInfo();
+      } catch (e) {
+        localStorage.removeItem('bpm_esign_user');
+        window.location.href = '/login';
+      }
+    }
+
+    function handleLogout() {
+      localStorage.removeItem('bpm_esign_user');
+      localStorage.clear();
+      window.location.replace('/login');
+    }
+
+    function updateCustomSignerInfo() {
+      const name = (document.getElementById('sig-custom-name') ? document.getElementById('sig-custom-name').value.trim() : '') || 'Ketua BPM ITG 2026';
+      const role = (document.getElementById('sig-custom-role') ? document.getElementById('sig-custom-role').value.trim() : '') || 'Ketua Badan Perwakilan Mahasiswa ITG';
+
+      const nameEl = document.getElementById('sig-title-name');
+      const roleEl = document.getElementById('sig-title-role');
+      if (nameEl) nameEl.innerText = name;
+      if (roleEl) roleEl.innerText = role;
+    }
+
+    function selectTemplate(type) {
+      activeTemplate = type;
+      ['standard', 'footer', 'certificate'].forEach(t => {
+        const btn = document.getElementById(`tpl-btn-${t}`);
+        if (t === type) {
+          btn.className = 'p-3 rounded-xl border-2 border-navy-800 bg-navy-50/50 text-left transition-all';
+        } else {
+          btn.className = 'p-3 rounded-xl border border-slate-200 text-left hover:border-navy-600 transition-all';
+        }
+      });
+
+      const overlay = document.getElementById('sig-overlay');
+
+      if (type === 'standard') {
+        overlay.style.width = '210px';
+        overlay.style.height = '105px';
+        sigPosition.width = 210;
+        sigPosition.height = 105;
+      } else if (type === 'footer') {
+        overlay.style.width = '480px';
+        overlay.style.height = '50px';
+        sigPosition.width = 480;
+        sigPosition.height = 50;
+      } else if (type === 'certificate') {
+        overlay.style.width = '260px';
+        overlay.style.height = '90px';
+        sigPosition.width = 260;
+        sigPosition.height = 90;
+      }
+      updateCustomSignerInfo();
+    }
+
+    function testVerificationClick(e) {
+      if (e) e.stopPropagation();
+      if (currentDocument && currentDocument.documentCode) {
+        window.open(`/verify/${currentDocument.documentCode}`, '_blank');
+      } else {
+        alert('Upload surat terlebih dahulu untuk menguji tautan verifikasi live!');
+      }
+    }
+
+    function openVerificationPage() {
+      const code = document.getElementById('res-doc-code').innerText;
+      if (code) {
+        window.open(`/verify/${code}`, '_blank');
+      }
+    }
+
+    function switchTab(tab) {
+      currentTab = tab;
+      ['sign', 'history', 'verify', 'users'].forEach(t => {
+        const btn = document.getElementById(`nav-${t}`);
+        const content = document.getElementById(`tab-${t}-content`);
+        if (t === tab) {
+          btn.className = 'flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold bg-gold-500 text-navy-900 transition-all';
+          content.classList.remove('hidden');
+        } else {
+          btn.className = 'flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-medium text-navy-200 hover:bg-navy-800 transition-all';
+          content.classList.add('hidden');
+        }
+      });
+
+      if (tab === 'history') loadHistory();
+      if (tab === 'users') loadUsers();
+    }
+
+    async function loadUsers() {
+      const tbody = document.getElementById('users-table-body');
+      tbody.innerHTML = '<tr><td colspan="4" class="p-4 text-center text-slate-400">Memuat data pengguna...</td></tr>';
+      try {
+        const res = await fetch('/api/users');
+        const data = await res.json();
+        if (!data.users || data.users.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="4" class="p-4 text-center text-slate-400">Belum ada akun pengguna</td></tr>';
+          return;
+        }
+
+        tbody.innerHTML = data.users.map(u => `
+          <tr class="hover:bg-slate-50 transition-colors">
+            <td class="py-3 px-3 font-bold text-slate-800">${u.name}</td>
+            <td class="py-3 px-3 text-slate-600">${u.email}</td>
+            <td class="py-3 px-3">
+              <span class="px-2 py-0.5 text-[10px] font-bold rounded ${
+                u.role === 'ADMIN' ? 'bg-purple-100 text-purple-800' :
+                u.role === 'KETUA_BPM' ? 'bg-gold-500/20 text-gold-700 border border-gold-500/30' :
+                'bg-slate-100 text-slate-700'
+              }">
+                ${u.role}
+              </span>
+            </td>
+            <td class="py-3 px-3 text-center">
+              ${u.email === 'admin@bpmitg.ac.id' ? '<span class="text-[10px] text-slate-400 italic">Akun Utama</span>' : `
+                <button onclick="deleteUser('${u.id}')" class="px-2 py-1 bg-red-50 hover:bg-red-100 text-red-600 font-semibold rounded text-[10px] transition-colors">
+                  Hapus
+                </button>
+              `}
+            </td>
+          </tr>
+        `).join('');
+      } catch (err) {
+        tbody.innerHTML = '<tr><td colspan="4" class="p-4 text-center text-red-500">Gagal memuat pengguna</td></tr>';
+      }
+    }
+
+    async function createUser(e) {
+      e.preventDefault();
+      const name = document.getElementById('new-user-name').value.trim();
+      const email = document.getElementById('new-user-email').value.trim();
+      const password = document.getElementById('new-user-pass').value.trim();
+      const organization = document.getElementById('new-user-org').value.trim();
+      const role = document.getElementById('new-user-role').value;
+
+      try {
+        const res = await fetch('/api/users', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, email, password, role, organization })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Gagal membuat akun');
+
+        alert(`✅ Akun Organisasi "${organization}" (${name}) berhasil dibuat!`);
+        document.getElementById('new-user-name').value = '';
+        document.getElementById('new-user-email').value = '';
+        document.getElementById('new-user-pass').value = '';
+        document.getElementById('new-user-org').value = '';
+        loadUsers();
+      } catch (err) {
+        alert('❌ Error: ' + err.message);
+      }
+    }
+
+    async function deleteUser(id) {
+      if (!confirm('Yakin ingin menghapus akun pengguna ini?')) return;
+      try {
+        const res = await fetch(`/api/users/${id}`, { method: 'DELETE' });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Gagal menghapus');
+
+        alert('✅ Akun berhasil dihapus!');
+        loadUsers();
+      } catch (err) {
+        alert('❌ Error: ' + err.message);
+      }
+    }
+
+    async function submitSignPDF() {
+      if (!currentDocument) return;
+      hideAlert();
+
+      if (currentUser && currentUser.role === 'ADMIN') {
+        showAlert('🛡️ Akun Admin hanya berwenang membuat & mengelola akun. Untuk melakukan tanda tangan dokumen, silakan gunakan Akun Organisasi.');
+        return;
+      }
+
+      const customName = document.getElementById('sig-custom-name').value.trim() || (currentUser ? currentUser.name : 'Penandatangan Resmi');
+      const rolePrefix = document.getElementById('sig-custom-role-prefix').value.trim() || 'Ketua';
+      const orgName = currentUser ? (currentUser.organization || 'Organisasi Resmi') : 'Organisasi Resmi';
+      const fullTitle = `${rolePrefix} ${orgName}`;
+
+      try {
+        const res = await fetch(`/api/sign/${currentDocument.id}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            pageNumber: pdfPageNum,
+            position: sigPosition,
+            templateType: activeTemplate,
+            signerName: customName,
+            signerTitle: fullTitle,
+          })
+        });
+
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Gagal tanda tangan');
+
+        document.getElementById('res-doc-code').innerText = data.documentCode;
+        document.getElementById('res-hash').innerText = data.signedHash;
+        document.getElementById('download-btn').href = `/signed/${data.signedFilename}`;
+
+        goToStep(3);
+      } catch (err) {
+        showAlert(err.message || 'Terjadi kesalahan penandatanganan');
+      }
+    }
+
+    function showAlert(msg, isError = true) {
+      const box = document.getElementById('alert-box');
+      const txt = document.getElementById('alert-text');
+      txt.innerText = msg;
+      box.className = `p-4 rounded-2xl border text-sm flex items-center justify-between ${
+        isError ? 'bg-red-50 border-red-200 text-red-700' : 'bg-emerald-50 border-emerald-200 text-emerald-700'
+      }`;
+      box.classList.remove('hidden');
+    }
+
+    function hideAlert() {
+      document.getElementById('alert-box').classList.add('hidden');
+    }
+
+    function handleFileChange(e) {
+      const file = e.target.files[0];
+      if (file) {
+        if (file.type !== 'application/pdf') {
+          showAlert('Hanya file PDF yang diperbolehkan!');
+          return;
+        }
+        selectedFile = file;
+        document.getElementById('file-label-title').innerText = file.name;
+        document.getElementById('doc-name').value = file.name.replace('.pdf', '');
+        hideAlert();
+      }
+    }
+
+    async function submitStep1() {
+      hideAlert();
+      const num = document.getElementById('doc-number').value.trim();
+      const name = document.getElementById('doc-name').value.trim();
+      const date = document.getElementById('doc-date').value;
+      const sender = document.getElementById('doc-sender').value.trim();
+
+      if (!selectedFile) return showAlert('Pilih file PDF terlebih dahulu!');
+      if (!num || !name) return showAlert('Nomor surat dan nama dokumen wajib diisi!');
+
+      const formData = new FormData();
+      formData.append('file', selectedFile);
+      formData.append('documentNumber', num);
+      formData.append('documentName', name);
+      formData.append('documentDate', date);
+      formData.append('sender', sender);
+
+      try {
+        const res = await fetch('/api/upload', { method: 'POST', body: formData });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Gagal upload');
+
+        currentDocument = data.document;
+        totalPdfPages = data.document.pageCount || 1;
+
+        // Load PDF JS
+        const pdfUrl = `/uploads/${currentDocument.originalFilename}`;
+        pdfDocObj = await pdfjsLib.getDocument(pdfUrl).promise;
+        
+        goToStep(2);
+      } catch (err) {
+        showAlert(err.message || 'Terjadi kesalahan saat unggah');
+      }
+    }
+
+    function goToStep(step) {
+      currentStep = step;
+      [1, 2, 3].forEach(s => {
+        const card = document.getElementById(`step-${s}-card`);
+        const ind = document.getElementById(`step${s}-indicator`);
+        if (s === step) {
+          card.classList.remove('hidden');
+          ind.className = 'flex items-center gap-2 text-navy-900 font-bold';
+        } else {
+          card.classList.add('hidden');
+          ind.className = 'flex items-center gap-2 text-slate-400';
+        }
+      });
+
+      if (step === 2) renderCanvasPage(1);
+    }
+
+    async function renderCanvasPage(pageNum) {
+      if (!pdfDocObj) return;
+      pdfPageNum = pageNum;
+      document.getElementById('page-num-display').innerText = `${pdfPageNum} / ${totalPdfPages}`;
+      document.getElementById('zoom-display').innerText = `${zoomLevel}%`;
+
+      const page = await pdfDocObj.getPage(pageNum);
+      const canvas = document.getElementById('pdf-canvas');
+      const scale = (zoomLevel / 100) * 1.5;
+      const viewport = page.getViewport({ scale });
+
+      canvas.height = viewport.height;
+      canvas.width = viewport.width;
+
+      const ctx = canvas.getContext('2d');
+      await page.render({ canvasContext: ctx, viewport }).promise;
+    }
+
+    function changePage(delta) {
+      const newPage = pdfPageNum + delta;
+      if (newPage >= 1 && newPage <= totalPdfPages) {
+        renderCanvasPage(newPage);
+      }
+    }
+
+    function changeZoom(delta) {
+      const newZoom = zoomLevel + delta;
+      if (newZoom >= 50 && newZoom <= 150) {
+        zoomLevel = newZoom;
+        renderCanvasPage(pdfPageNum);
+      }
+    }
+
+    function initDragSig() {
+      const box = document.getElementById('sig-overlay');
+      box.addEventListener('mousedown', (e) => {
+        isDraggingSig = true;
+        dragStart = { x: e.clientX - box.offsetLeft, y: e.clientY - box.offsetTop };
+      });
+
+      window.addEventListener('mousemove', (e) => {
+        if (!isDraggingSig) return;
+        const scale = (zoomLevel / 100) * 1.5;
+        const x = Math.max(0, e.clientX - dragStart.x);
+        const y = Math.max(0, e.clientY - dragStart.y);
+
+        box.style.left = `${x}px`;
+        box.style.top = `${y}px`;
+
+        sigPosition.x = Math.round(x / scale);
+        sigPosition.y = Math.round(y / scale);
+      });
+
+      window.addEventListener('mouseup', () => isDraggingSig = false);
+    }
+
+    async function submitSignPDF() {
+      if (!currentDocument) return;
+      hideAlert();
+
+      const customName = document.getElementById('sig-custom-name').value.trim();
+      const customRole = document.getElementById('sig-custom-role').value.trim();
+
+      try {
+        const res = await fetch(`/api/sign/${currentDocument.id}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            pageNumber: pdfPageNum,
+            position: sigPosition,
+            templateType: activeTemplate,
+            signerName: customName,
+            signerTitle: customRole,
+          })
+        });
+
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Gagal tanda tangan');
+
+        document.getElementById('res-doc-code').innerText = data.documentCode;
+        document.getElementById('res-hash').innerText = data.signedHash;
+        document.getElementById('download-btn').href = `/signed/${data.signedFilename}`;
+
+        goToStep(3);
+      } catch (err) {
+        showAlert(err.message || 'Terjadi kesalahan penandatanganan');
+      }
+    }
+
+    function copyVerifyLinkResult() {
+      const code = document.getElementById('res-doc-code').innerText;
+      const url = `${window.location.origin}/verify/${code}`;
+      navigator.clipboard.writeText(url);
+      alert('Link Verifikasi Berhasil Disalin!');
+    }
+
+    function resetApp() {
+      selectedFile = null;
+      currentDocument = null;
+      pdfDocObj = null;
+      document.getElementById('pdf-input').value = '';
+      document.getElementById('file-label-title').innerText = 'Tarik file PDF ke sini';
+      document.getElementById('doc-number').value = '';
+      document.getElementById('doc-name').value = '';
+      goToStep(1);
+    }
+
+    async function loadHistory() {
+      const container = document.getElementById('history-list');
+      container.innerHTML = '<p className="text-slate-400 text-xs">Memuat data...</p>';
+      try {
+        const res = await fetch('/api/documents');
+        const data = await res.json();
+        if (!data.documents || data.documents.length === 0) {
+          container.innerHTML = '<p className="text-slate-400 text-xs">Belum ada riwayat dokumen</p>';
+          return;
+        }
+
+        container.innerHTML = data.documents.map(d => `
+          <div className="bg-white rounded-2xl border border-slate-200 p-4 space-y-3 shadow-sm">
+            <div className="flex justify-between items-center">
+              <span className="font-mono text-[10px] font-bold text-navy-700 bg-navy-50 px-2 py-0.5 rounded">${d.documentCode}</span>
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded ${d.status === 'VERIFIED' ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'}">${d.status}</span>
+            </div>
+            <div>
+              <p className="font-bold text-xs text-slate-800 line-clamp-1">${d.documentName}</p>
+              <p className="text-[11px] text-slate-500">No: ${d.documentNumber}</p>
+            </div>
+            ${d.signedFilename ? `
+              <div className="pt-2 border-t flex gap-2">
+                <a href="/signed/${d.signedFilename}" download className="flex-1 text-center py-1.5 bg-emerald-600 text-white font-bold rounded-lg text-[11px]">Download</a>
+                <a href="/verify/${d.documentCode}" target="_blank" className="p-1.5 border rounded-lg hover:bg-slate-50 text-slate-600"><i data-lucide="external-link" className="w-3.5 h-3.5"></i></a>
+              </div>
+            ` : ''}
+          </div>
+        `).join('');
+        lucide.createIcons();
+      } catch (err) {
+        container.innerHTML = '<p className="text-red-500 text-xs">Gagal memuat riwayat</p>';
+      }
+    }
+
+    function checkVerification() {
+      const code = document.getElementById('verify-code-input').value.trim();
+      if (!code) return alert('Masukkan ID Dokumen!');
+      window.open(`/verify/${code}`, '_blank');
+    }
+  </script>
+</body>
+</html>

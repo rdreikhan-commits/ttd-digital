@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login - BPM ITG E-SIGN 2026</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            navy: {
+              50: '#f0f4f9',
+              100: '#dbe5f2',
+              200: '#bccfe5',
+              600: '#1d3e6e',
+              800: '#0f2444',
+              900: '#0b1d3a',
+              950: '#061021',
+            },
+            gold: {
+              400: '#f6ca69',
+              500: '#f4ba3e',
+              600: '#d99926',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body class="bg-navy-950 text-slate-900 font-sans min-h-screen flex items-center justify-center p-4">
+
+  <div class="max-w-md w-full bg-white rounded-3xl p-8 shadow-2xl space-y-6 border border-navy-800/40">
+    
+    <!-- Login Header -->
+    <div class="text-center space-y-2">
+      <div class="w-16 h-16 bg-gradient-to-br from-gold-400 to-gold-600 rounded-2xl flex items-center justify-center mx-auto shadow-lg shadow-gold-500/20">
+        <i data-lucide="shield" class="w-9 h-9 text-navy-950"></i>
+      </div>
+      <h2 class="text-2xl font-bold text-navy-900 tracking-tight">BPM ITG E-SIGN</h2>
+      <p class="text-xs text-slate-500 font-medium">Sistem Otentikasi Tanda Tangan Elektronik 2026</p>
+    </div>
+
+    <!-- Login Alert Error -->
+    <div id="login-error" class="hidden p-3.5 bg-red-50 border border-red-200 text-red-700 rounded-xl text-xs flex items-center gap-2">
+      <i data-lucide="alert-circle" class="w-4 h-4 text-red-500 flex-shrink-0"></i>
+      <span id="login-error-text">Email atau password salah!</span>
+    </div>
+
+    <!-- Login Form -->
+    <form id="login-form" onsubmit="handleLoginSubmit(event)" class="space-y-4">
+      <div>
+        <label class="block text-xs font-semibold text-slate-700 mb-1.5">Email / Username</label>
+        <div class="relative">
+          <i data-lucide="mail" class="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
+          <input type="email" id="login-email" required placeholder="admin@bpmitg.ac.id" class="w-full pl-10 pr-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-navy-500/20 focus:border-navy-600 bg-slate-50/50">
+        </div>
+      </div>
+
+      <div>
+        <label class="block text-xs font-semibold text-slate-700 mb-1.5">Password / Kata Sandi</label>
+        <div class="relative">
+          <i data-lucide="lock" class="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
+          <input type="password" id="login-password" required placeholder="••••••••" class="w-full pl-10 pr-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-navy-500/20 focus:border-navy-600 bg-slate-50/50">
+        </div>
+      </div>
+
+      <button type="submit" class="w-full py-3 bg-gradient-to-r from-navy-800 to-navy-950 text-white rounded-xl font-bold text-sm hover:from-navy-700 hover:to-navy-900 transition-all shadow-lg shadow-navy-950/20 flex items-center justify-center gap-2">
+        <span>Masuk Sistem</span>
+        <i data-lucide="arrow-right" class="w-4 h-4"></i>
+      </button>
+    </form>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      lucide.createIcons();
+      // If already logged in, redirect to dashboard
+      const existing = localStorage.getItem('bpm_esign_user');
+      if (existing) {
+        window.location.href = '/';
+      }
+    });
+
+    async function handleLoginSubmit(e) {
+      e.preventDefault();
+      const email = document.getElementById('login-email').value.trim();
+      const password = document.getElementById('login-password').value.trim();
+      const errBox = document.getElementById('login-error');
+      const errTxt = document.getElementById('login-error-text');
+
+      errBox.classList.add('hidden');
+
+      try {
+        const res = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Login gagal!');
+
+        // Save session and redirect
+        localStorage.setItem('bpm_esign_user', JSON.stringify(data.user));
+        window.location.href = '/';
+      } catch (err) {
+        errTxt.innerText = err.message || 'Email atau password salah!';
+        errBox.classList.remove('hidden');
+      }
+    }
+  </script>
+</body>
+</html>
