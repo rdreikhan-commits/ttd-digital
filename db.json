@@ -28,44 +28,5 @@
       "createdAt": "2026-09-02T17:33:06.592Z"
     }
   ],
-  "documents": [
-    {
-      "id": "mtkeic2go1juh",
-      "documentCode": "BPM-ESIGN-2026-000002",
-      "documentNumber": "asfdfbgnh",
-      "documentName": "MENENTUKAN TUGAS BERDASARKAN PRIORITAS",
-      "subject": "-",
-      "documentDate": "2026-09-02",
-      "sender": "ascdvbf",
-      "originalFilename": "1788371991432-603071124-MENENTUKAN_TUGAS_BERDASARKAN_PRIORITAS.pdf",
-      "signedFilename": "BPM-ESIGN-2026-000002-SIGNED.pdf",
-      "status": "VERIFIED",
-      "originalHash": "4f3432e0e4b498bfffb2960f7359cb0296a8adf860a1baadb5caf789e7245948",
-      "signedHash": "8d4fc94952a34865cd8614324d2b32b100f158dcc5fe17ebaf1874f192d16219",
-      "pageCount": 3,
-      "signedAt": "2026-09-02T18:00:27.626Z",
-      "signerName": "Presiden BEM ITG 2026",
-      "signerTitle": "Ketua Badan Eksekutif Mahasiswa (BEM ITG)",
-      "createdAt": "2026-09-02T17:59:51.448Z"
-    },
-    {
-      "id": "mtkdna42y0zps",
-      "documentCode": "BPM-ESIGN-2026-000008",
-      "documentNumber": "grdxhtgh",
-      "documentName": "sertifikat_course_123_5162147_020926070937",
-      "subject": "-",
-      "documentDate": "2026-09-02",
-      "sender": "dwasdvff",
-      "originalFilename": "1788370542569-895593633-sertifikat_course_123_5162147_020926070937.pdf",
-      "signedFilename": null,
-      "status": "PENDING",
-      "originalHash": "2f33d54d8b4835eaac2297092cba332d072a346a75a9e9fadef7edc8c3839528",
-      "signedHash": null,
-      "pageCount": 3,
-      "signedAt": null,
-      "signerName": "Ketua BPM ITG 2026",
-      "signerTitle": "Ketua Badan Perwakilan Mahasiswa Institut Teknologi Garut",
-      "createdAt": "2026-09-02T17:35:42.578Z"
-    }
-  ]
+  "documents": []
 }

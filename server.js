@@ -599,14 +599,9 @@ app.get('/verify/:code', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'verify.html'));
 });
 
-// Dynamic file handlers for uploads and signed PDFs with memory fallback for Vercel
+// Dynamic file handlers for uploads and signed PDFs with memory priority for Vercel
 app.get('/uploads/:filename', (req, res) => {
   const filename = req.params.filename;
-  const filePath = path.join(UPLOADS_DIR, filename);
-
-  if (fs.existsSync(filePath)) {
-    return res.sendFile(filePath);
-  }
 
   const doc = documents.find(d => d.originalFilename === filename);
   if (doc && doc.originalBase64) {
@@ -616,16 +611,16 @@ app.get('/uploads/:filename', (req, res) => {
     return res.send(buf);
   }
 
+  const filePath = path.join(UPLOADS_DIR, filename);
+  if (fs.existsSync(filePath)) {
+    return res.sendFile(filePath);
+  }
+
   return res.status(404).send('File unggahan tidak ditemukan');
 });
 
 app.get('/signed/:filename', (req, res) => {
   const filename = req.params.filename;
-  const filePath = path.join(SIGNED_DIR, filename);
-
-  if (fs.existsSync(filePath)) {
-    return res.sendFile(filePath);
-  }
 
   const doc = documents.find(d => d.signedFilename === filename);
   if (doc && doc.signedBase64) {
@@ -633,6 +628,11 @@ app.get('/signed/:filename', (req, res) => {
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
     return res.send(buf);
+  }
+
+  const filePath = path.join(SIGNED_DIR, filename);
+  if (fs.existsSync(filePath)) {
+    return res.sendFile(filePath);
   }
 
   return res.status(404).send('File hasil TTD tidak ditemukan');

@@ -749,9 +749,9 @@
         currentDocument = data.document;
         totalPdfPages = data.document.pageCount || 1;
 
-        // Load PDF JS
-        const pdfUrl = `/uploads/${currentDocument.originalFilename}`;
-        pdfDocObj = await pdfjsLib.getDocument(pdfUrl).promise;
+        // Load PDF JS directly from local file ArrayBuffer
+        const arrayBuf = await selectedFile.arrayBuffer();
+        pdfDocObj = await pdfjsLib.getDocument({ data: arrayBuf }).promise;
         
         goToStep(2);
       } catch (err) {
