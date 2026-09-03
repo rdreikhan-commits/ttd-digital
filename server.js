@@ -224,7 +224,9 @@ app.post('/api/sign/:id', async (req, res) => {
     const helveticaBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
 
     // QR Code Image
-    const verifyUrl = `${req.protocol}://${req.get('host')}/verify/${doc.documentCode}`;
+    const protocol = req.headers['x-forwarded-proto'] || req.protocol || 'https';
+    const host = req.headers['x-forwarded-host'] || req.get('host');
+    const verifyUrl = `${protocol}://${host}/verify/${doc.documentCode}`;
     const qrPngBuffer = await QRCode.toBuffer(verifyUrl, {
       margin: 1,
       width: 150,
