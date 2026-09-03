@@ -4,7 +4,7 @@ const path = require('path');
 const fs = require('fs');
 const crypto = require('crypto');
 const QRCode = require('qrcode');
-const { PDFDocument, rgb, StandardFonts } = require('pdf-lib');
+const { PDFDocument, rgb, StandardFonts, PDFName, PDFString } = require('pdf-lib');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -419,6 +419,28 @@ app.post('/api/sign/:id', async (req, res) => {
         color: rgb(0.4, 0.4, 0.4),
       });
     }
+
+    // Add Clickable Link Annotation over Signature Box & QR Code
+    const linkAnnot = pdfDoc.context.obj({
+      Type: 'Annot',
+      Subtype: 'Link',
+      Rect: [blockX, blockY, blockX + blockW, blockY + blockH],
+      Border: [0, 0, 0],
+      C: [0, 0, 0],
+      A: {
+        Type: 'Action',
+        S: 'URI',
+        URI: PDFString.of(verifyUrl),
+      },
+    });
+    const linkAnnotRef = pdfDoc.context.register(linkAnnot);
+
+    let annots = targetPage.node.get(PDFName.of('Annots'));
+    if (!annots) {
+      annots = pdfDoc.context.obj([]);
+      targetPage.node.set(PDFName.of('Annots'), annots);
+    }
+    annots.push(linkAnnotRef);
 
     // Save Signed PDF
     const signedPdfBytes = await pdfDoc.save();
