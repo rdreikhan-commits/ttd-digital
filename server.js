@@ -9,14 +9,20 @@ const { PDFDocument, rgb, StandardFonts } = require('pdf-lib');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Directories
-const UPLOADS_DIR = path.join(__dirname, 'public', 'uploads');
-const SIGNED_DIR = path.join(__dirname, 'public', 'signed');
-const SIGNATURES_DIR = path.join(__dirname, 'public', 'signatures');
-const DB_FILE = path.join(__dirname, 'db.json');
+// Directories & Vercel Storage
+const isVercel = !!(process.env.VERCEL || process.env.NOW_REGION);
+const baseStorageDir = isVercel ? path.join('/tmp', 'bpm-esign') : path.join(__dirname, 'public');
+const UPLOADS_DIR = path.join(baseStorageDir, 'uploads');
+const SIGNED_DIR = path.join(baseStorageDir, 'signed');
+const SIGNATURES_DIR = path.join(baseStorageDir, 'signatures');
+const DB_FILE = isVercel ? path.join('/tmp', 'bpm-esign', 'db.json') : path.join(__dirname, 'db.json');
 
 [UPLOADS_DIR, SIGNED_DIR, SIGNATURES_DIR].forEach(dir => {
-  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+  try {
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+  } catch (e) {
+    console.error('Directory creation error:', e);
+  }
 });
 
 // Simple JSON Store with Users & Documents
@@ -53,7 +59,20 @@ let dbData = {
   documents: []
 };
 
-if (fs.existsSync(DB_FILE)) {
+// Load initial seed data from project db.json if available
+const seedDbPath = path.join(__dirname, 'db.json');
+if (fs.existsSync(seedDbPath)) {
+  try {
+    const loadedSeed = JSON.parse(fs.readFileSync(seedDbPath, 'utf8'));
+    if (loadedSeed.users) dbData.users = loadedSeed.users;
+    if (loadedSeed.documents) dbData.documents = loadedSeed.documents;
+  } catch (e) {
+    console.error('Seed DB Load Error:', e);
+  }
+}
+
+// If DB_FILE exists (e.g. in /tmp or local), load any persisted data over seed
+if (fs.existsSync(DB_FILE) && DB_FILE !== seedDbPath) {
   try {
     const loaded = JSON.parse(fs.readFileSync(DB_FILE, 'utf8'));
     if (Array.isArray(loaded)) {
@@ -72,7 +91,13 @@ let users = dbData.users;
 function saveDB() {
   dbData.documents = documents;
   dbData.users = users;
-  fs.writeFileSync(DB_FILE, JSON.stringify(dbData, null, 2));
+  try {
+    const dir = path.dirname(DB_FILE);
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    fs.writeFileSync(DB_FILE, JSON.stringify(dbData, null, 2));
+  } catch (e) {
+    console.error('Save DB Warning:', e);
+  }
 }
 
 // Multer Storage
@@ -100,6 +125,9 @@ const upload = multer({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
+app.use('/uploads', express.static(UPLOADS_DIR));
+app.use('/signed', express.static(SIGNED_DIR));
+app.use('/signatures', express.static(SIGNATURES_DIR));
 
 // Create dummy signature image if missing
 const dummySigPath = path.join(SIGNATURES_DIR, 'signature.png');
@@ -564,9 +592,13 @@ app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-app.listen(PORT, () => {
-  console.log(`====================================================`);
-  console.log(`🚀 BPM ITG E-SIGN 2026 (Vanilla JS Server Ready)`);
-  console.log(`👉 Access URL: http://localhost:${PORT}`);
-  console.log(`====================================================`);
-});
+if (!process.env.VERCEL && require.main === module) {
+  app.listen(PORT, () => {
+    console.log(`====================================================`);
+    console.log(`🚀 BPM ITG E-SIGN 2026 (Vanilla JS Server Ready)`);
+    console.log(`👉 Access URL: http://localhost:${PORT}`);
+    console.log(`====================================================`);
+  });
+}
+
+module.exports = app;

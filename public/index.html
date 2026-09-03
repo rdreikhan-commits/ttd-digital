@@ -667,10 +667,8 @@
         return;
       }
 
-      const customName = document.getElementById('sig-custom-name').value.trim() || (currentUser ? currentUser.name : 'Penandatangan Resmi');
-      const rolePrefix = document.getElementById('sig-custom-role-prefix').value.trim() || 'Ketua';
-      const orgName = currentUser ? (currentUser.organization || 'Organisasi Resmi') : 'Organisasi Resmi';
-      const fullTitle = `${rolePrefix} ${orgName}`;
+      const customName = (document.getElementById('sig-custom-name') ? document.getElementById('sig-custom-name').value.trim() : '') || (currentUser ? currentUser.name : 'Penandatangan Resmi');
+      const fullTitle = (document.getElementById('sig-custom-role') ? document.getElementById('sig-custom-role').value.trim() : '') || (currentUser ? currentUser.organization : 'Organisasi Resmi');
 
       try {
         const res = await fetch(`/api/sign/${currentDocument.id}`, {
