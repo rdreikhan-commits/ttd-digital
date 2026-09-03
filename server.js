@@ -172,7 +172,9 @@ app.post('/api/upload', upload.single('file'), async (req, res) => {
       documentDate: documentDate || new Date().toISOString().split('T')[0],
       sender: sender || 'Ketua BPM ITG',
       originalFilename: req.file.filename,
+      originalBase64: pdfBytes.toString('base64'),
       signedFilename: null,
+      signedBase64: null,
       status: 'PENDING',
       originalHash,
       signedHash: null,
@@ -186,7 +188,8 @@ app.post('/api/upload', upload.single('file'), async (req, res) => {
     documents.unshift(newDoc);
     saveDB();
 
-    res.json({ success: true, document: newDoc });
+    const { originalBase64, signedBase64, ...cleanDoc } = newDoc;
+    res.json({ success: true, document: cleanDoc });
   } catch (err) {
     console.error('Upload Error:', err);
     res.status(500).json({ error: err.message || 'Gagal mengunggah file PDF' });
@@ -206,12 +209,14 @@ app.post('/api/sign/:id', async (req, res) => {
     const doc = documents[docIndex];
 
     const originalPath = path.join(UPLOADS_DIR, doc.originalFilename);
-    if (!fs.existsSync(originalPath)) {
+    let existingPdfBytes;
+    if (fs.existsSync(originalPath)) {
+      existingPdfBytes = fs.readFileSync(originalPath);
+    } else if (doc.originalBase64) {
+      existingPdfBytes = Buffer.from(doc.originalBase64, 'base64');
+    } else {
       return res.status(404).json({ error: 'File PDF asal tidak ditemukan' });
     }
-
-    // Load PDF
-    const existingPdfBytes = fs.readFileSync(originalPath);
     const pdfDoc = await PDFDocument.load(existingPdfBytes);
 
     const targetPageNum = (pageNumber || 1) - 1;
@@ -421,7 +426,11 @@ app.post('/api/sign/:id', async (req, res) => {
     const signedFilename = `${doc.documentCode}-SIGNED.pdf`;
     const signedFilePath = path.join(SIGNED_DIR, signedFilename);
 
-    fs.writeFileSync(signedFilePath, signedBuffer);
+    try {
+      fs.writeFileSync(signedFilePath, signedBuffer);
+    } catch (e) {
+      console.error('Write signed file warning:', e);
+    }
 
     // Compute Signed SHA-256 Hash
     const signedHash = crypto.createHash('sha256').update(signedBuffer).digest('hex');
@@ -430,6 +439,7 @@ app.post('/api/sign/:id', async (req, res) => {
     const now = new Date();
     doc.status = 'VERIFIED';
     doc.signedFilename = signedFilename;
+    doc.signedBase64 = signedBuffer.toString('base64');
     doc.signedHash = signedHash;
     doc.signerName = nameToRender;
     doc.signerTitle = titleToRender;
@@ -587,6 +597,45 @@ app.get('/login', (req, res) => {
 // Serve Public Verification HTML Route
 app.get('/verify/:code', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'verify.html'));
+});
+
+// Dynamic file handlers for uploads and signed PDFs with memory fallback for Vercel
+app.get('/uploads/:filename', (req, res) => {
+  const filename = req.params.filename;
+  const filePath = path.join(UPLOADS_DIR, filename);
+
+  if (fs.existsSync(filePath)) {
+    return res.sendFile(filePath);
+  }
+
+  const doc = documents.find(d => d.originalFilename === filename);
+  if (doc && doc.originalBase64) {
+    const buf = Buffer.from(doc.originalBase64, 'base64');
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `inline; filename="${filename}"`);
+    return res.send(buf);
+  }
+
+  return res.status(404).send('File unggahan tidak ditemukan');
+});
+
+app.get('/signed/:filename', (req, res) => {
+  const filename = req.params.filename;
+  const filePath = path.join(SIGNED_DIR, filename);
+
+  if (fs.existsSync(filePath)) {
+    return res.sendFile(filePath);
+  }
+
+  const doc = documents.find(d => d.signedFilename === filename);
+  if (doc && doc.signedBase64) {
+    const buf = Buffer.from(doc.signedBase64, 'base64');
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    return res.send(buf);
+  }
+
+  return res.status(404).send('File hasil TTD tidak ditemukan');
 });
 
 // Fallback to index.html
