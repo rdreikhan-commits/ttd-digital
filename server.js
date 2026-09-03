@@ -200,16 +200,41 @@ app.post('/api/upload', upload.single('file'), async (req, res) => {
 app.post('/api/sign/:id', async (req, res) => {
   try {
     const docId = req.params.id;
-    const { pageNumber, position, templateType, signerName, signerTitle } = req.body;
+    const { pageNumber, position, templateType, signerName, signerTitle, originalBase64, documentCode } = req.body;
 
-    const docIndex = documents.findIndex(d => d.id === docId);
-    if (docIndex === -1) {
-      return res.status(404).json({ error: 'Dokumen tidak ditemukan' });
+    let docIndex = documents.findIndex(d => d.id === docId || (documentCode && d.documentCode === documentCode));
+    let doc;
+
+    if (docIndex !== -1) {
+      doc = documents[docIndex];
+    } else {
+      // Re-create doc on the fly if serverless instance switched
+      const count = documents.length + 1;
+      const code = documentCode || `BPM-ESIGN-2026-${String(count).padStart(6, '0')}`;
+      doc = {
+        id: docId,
+        documentCode: code,
+        documentNumber: 'DOC-REG',
+        documentName: 'Dokumen Surat',
+        subject: '-',
+        documentDate: new Date().toISOString().split('T')[0],
+        sender: 'Pengaju',
+        originalFilename: `${code}.pdf`,
+        originalBase64: originalBase64 || null,
+        signedFilename: `${code}-SIGNED.pdf`,
+        signedBase64: null,
+        status: 'PENDING',
+        createdAt: new Date().toISOString(),
+      };
+      documents.unshift(doc);
     }
-    const doc = documents[docIndex];
 
-    const originalPath = path.join(UPLOADS_DIR, doc.originalFilename);
+    if (originalBase64) {
+      doc.originalBase64 = originalBase64;
+    }
+
     let existingPdfBytes;
+    const originalPath = path.join(UPLOADS_DIR, doc.originalFilename);
     if (fs.existsSync(originalPath)) {
       existingPdfBytes = fs.readFileSync(originalPath);
     } else if (doc.originalBase64) {

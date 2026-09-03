@@ -528,19 +528,14 @@
       if (type === 'standard') {
         overlay.style.width = '210px';
         overlay.style.height = '105px';
-        sigPosition.width = 210;
-        sigPosition.height = 105;
       } else if (type === 'footer') {
         overlay.style.width = '480px';
         overlay.style.height = '50px';
-        sigPosition.width = 480;
-        sigPosition.height = 50;
       } else if (type === 'certificate') {
         overlay.style.width = '260px';
         overlay.style.height = '90px';
-        sigPosition.width = 260;
-        sigPosition.height = 90;
       }
+      updateSigPositionFromOverlay();
       updateCustomSignerInfo();
     }
 
@@ -667,8 +662,19 @@
         return;
       }
 
-      const customName = (document.getElementById('sig-custom-name') ? document.getElementById('sig-custom-name').value.trim() : '') || (currentUser ? currentUser.name : 'Penandatangan Resmi');
-      const fullTitle = (document.getElementById('sig-custom-role') ? document.getElementById('sig-custom-role').value.trim() : '') || (currentUser ? currentUser.organization : 'Organisasi Resmi');
+      updateSigPositionFromOverlay();
+
+      const customName = document.getElementById('sig-custom-name').value.trim();
+      const customRole = document.getElementById('sig-custom-role').value.trim();
+
+      let originalBase64 = null;
+      if (selectedFile) {
+        try {
+          originalBase64 = await fileToBase64(selectedFile);
+        } catch (e) {
+          console.warn('Could not encode selectedFile:', e);
+        }
+      }
 
       try {
         const res = await fetch(`/api/sign/${currentDocument.id}`, {
@@ -679,7 +685,9 @@
             position: sigPosition,
             templateType: activeTemplate,
             signerName: customName,
-            signerTitle: fullTitle,
+            signerTitle: customRole,
+            documentCode: currentDocument.documentCode,
+            originalBase64,
           })
         });
 
